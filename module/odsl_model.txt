@@ -1,0 +1,8 @@
+Model: commands*=Command;
+Command: OutlookCommand;
+OutlookCommand: AddOutlookSchedule | ModifyOutlookSchedule | RemoveOutlookSchedule | ListOutlookSchedule;
+
+AddOutlookSchedule: 'add_outlook_schedule' '(' description=STRING ',' start_time=STRING ',' end_time=STRING ')';
+ModifyOutlookSchedule: 'modify_outlook_schedule' '(' schedule_id=STRING ',' description=STRING ',' start_time=STRING ',' end_time=STRING ')';
+RemoveOutlookSchedule: 'remove_outlook_schedule' '(' schedule_id=STRING ')';
+ListOutlookSchedule: 'list_outlook_schedule' '(' ')';
