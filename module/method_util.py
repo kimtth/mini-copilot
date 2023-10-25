@@ -100,6 +100,14 @@ def replace_first_param(function_call, new_param) -> str:
 
 
 def get_func_list() -> List:
-    func_list = ['add_outlook_schedule',
-                 'modify_outlook_schedule', 'remove_outlook_schedule']
+    func_list = ['add_outlook_schedule', 'modify_outlook_schedule', 'remove_outlook_schedule']
+    return func_list
+
+def get_func_list_with_schedule_id() -> List:
+    func_list = ['modify_outlook_schedule', 'remove_outlook_schedule']
+    return func_list
+
+
+def get_func_list_without_schedule_id() -> List:
+    func_list = ['add_outlook_schedule']
     return func_list

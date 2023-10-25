@@ -169,3 +169,4 @@ chatflow/
 settings.dev.cfg
 hallucination.pf.txt
 module/dev_check.py
+memo.txt
