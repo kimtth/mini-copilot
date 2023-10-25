@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from module.odsl_interpreter import generate_odsl_execute
 from module.office_client import O365Client
 from module.enum_type import Speaker, GeneratePrompt, UserIntent
-from module.method_util import get_func_list, replace_first_param, try_get_first_parameter_in_function_call, try_parse_int, chat_completion
+from module.method_util import get_func_list_without_schedule_id, replace_first_param, try_get_first_parameter_in_function_call, try_parse_int, chat_completion
 
 
 class DialogAction(BaseModel):
@@ -115,7 +115,7 @@ class ChatBot(ChatbotInterface):
         try:
             msg_history = self.get_conversation_history_with_speaker()
             intent_result = chat_completion(msg_history,
-                                                    question, GeneratePrompt.INTENT.value)
+                                            question, GeneratePrompt.INTENT.value)
 
             if try_parse_int(intent_result):
                 intent_num = int(intent_result)
@@ -136,7 +136,7 @@ class ChatBot(ChatbotInterface):
                 [f"No.{s['no']} {s['subject']} {s['start']}-{s['end']}\n" for s in schedule_ids])
 
             nx_action = DialogAction(id=str(uuid()), intent=UserIntent.LIST_SCHEDULE.value, speaker=Speaker.ASSISTANT,
-                                     message=f"Please select the schedule title from the list.\n\n {schedule_ids_select}", timestamp=str(datetime.now()))
+                                     message=f"{schedule_ids_select}", timestamp=str(datetime.now()))
             self.conversation_history.append(nx_action)
 
             logging.info('<get_addtional_input>')
@@ -150,7 +150,7 @@ class ChatBot(ChatbotInterface):
         try:
             msg_history = self.get_conversation_history_with_speaker()
             response = chat_completion(msg_history,
-                                                question, GeneratePrompt.ODSL.value)
+                                       question, GeneratePrompt.ODSL.value)
             response_action = DialogAction(id=str(uuid()), intent=intent, speaker=Speaker.ASSISTANT,
                                            message=response, timestamp=str(datetime.now()))
             logging.info('<get_respond>')
@@ -158,7 +158,7 @@ class ChatBot(ChatbotInterface):
             logging.info(response_action)
             self.conversation_history.append(response_action)
 
-            func_list = get_func_list()
+            func_list = get_func_list_without_schedule_id()
 
             if any(func in response_action.message for func in func_list):
                 func_call = response_action.message
@@ -172,7 +172,7 @@ class ChatBot(ChatbotInterface):
                     logging.info('<get_respond><func_call>2')
                     logging.info(func_call)
                     generate_odsl_execute(func_call)
-                
+
                 response_action.message = func_call
 
             return response_action.message
@@ -185,7 +185,7 @@ class ChatBot(ChatbotInterface):
 
             # find schedule id in schedule list by schedule no.
             import re
-            match = re.search(r'\d+', _target_no) # "No.4 H2 Goals" -> "4"
+            match = re.search(r'\d+', _target_no)  # "No.4 H2 Goals" -> "4"
             target_no = None
             if match:
                 target_no = match.group()
@@ -194,7 +194,8 @@ class ChatBot(ChatbotInterface):
                 schedule['no']) == target_no]
 
             schedule_id = None
-            logging.info(f'<get_schedule_no>:{_target_no}:{target_no}:{schedule_no}')
+            logging.info(
+                f'<get_schedule_no>:{_target_no}:{target_no}:{schedule_no}')
             if len(schedule_no) > 0:
                 schedule_id = schedule_no[0]
 

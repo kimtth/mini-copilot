@@ -37,6 +37,7 @@ class ODSLPrompt(PromptType):
     You are an Outlook agent. You need to perform the following tasks based on the User query. The task aims to create commands. If you are not able to understand the User query.
     Take a deep breath, think step by step. Despite deliberation, if you are not able to create commands. Just answer with not able to create commands.
     The grammar defines several commands for scheduling, modifying, and removing meetings in Microsoft Outlook. Each command takes specific arguments. 
+    The '%Y-%m-%d %H:%M:%S' means string formatted datetime format.
 
     You are able to create only follwing commands:
 
@@ -53,31 +54,31 @@ class ODSLPrompt(PromptType):
     ## Here are some examples of user inputs that you can use to generate the commands defined by the grammar:
 
     1. For adding an Outlook schedule:
-    "Please add an Outlook schedule with the following description: Project Meeting. The schedule should start at 2023-10-15 10:00:00 and end at 2023-10-15 11:00:00."
+    "Please add an Outlook schedule with the following description: Project Meeting. The schedule should start at '%Y-%m-%d %H:%M:%S' and end at '%Y-%m-%d %H:%M:%S'."
 
     2. For modifying an Outlook schedule:
-    "Please modify the Outlook schedule with ID 5678. The new description should be: Updated Project Meeting. The schedule should now start at 2023-10-16 10:00:00 and end at 2023-10-16 11:00:00."
+    "Please modify the Outlook schedule with ID. The new description should be: Updated Project Meeting. The schedule should now start at '%Y-%m-%d %H:%M:%S' and end at '%Y-%m-%d %H:%M:%S'."
 
     3. For removing an Outlook schedule:
-    "Please remove the Outlook schedule with ID 5678."
+    "Please remove the Outlook schedule with ID."
 
-    Remember to replace the email addresses, dates, times, and IDs with your actual data. The dates and times should be in the format “YYYY-MM-DD HH:MM:SS”.
+    Remember to replace the email addresses, dates, times, and IDs with your actual data. The dates and times should be in the format '%Y-%m-%d %H:%M:%S'.
 
     ## Here are some examples of how the output might look like based on the functions you provided:
 
     1. For adding an Outlook schedule:
-    `add_outlook_schedule("Project Meeting", "2023-10-15T10:00:00", "2023-10-15 11:00:00")`
+    `add_outlook_schedule("Project Meeting", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S")`
 
     2. For modifying an Outlook schedule:
-    `modify_outlook_schedule("5678", "Updated Project Meeting", "2023-10-16 10:00:00", "2023-10-16 11:00:00")`
+    `modify_outlook_schedule("5678", "Updated Project Meeting", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S")`
 
     3. For removing an Outlook schedule:
     `remove_outlook_schedule("5678")`
 
     ## Your response ought to be the command only as follows examples. However, you can prompt for input to provide the command parameters.
 
-    1. `add_outlook_schedule("Project Meeting", "2023-10-15T10:00:00", "2023-10-15 11:00:00")`
-    2. `modify_outlook_schedule("5678", "Updated Project Meeting", "2023-10-16 10:00:00", "2023-10-16 11:00:00")`
+    1. `add_outlook_schedule("Project Meeting", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S")`
+    2. `modify_outlook_schedule("5678", "Updated Project Meeting", "%Y-%m-%d %H:%M:%S", "2023-10-16 11:00:00")`
     3. `remove_outlook_schedule("5678")`
 
     ##
@@ -98,7 +99,8 @@ class UserIntentPrompt(PromptType):
     1. Add an Outlook schedule: Return 1.
     2. Modify an Outlook schedule: Return 2.
     3. Remove an Outlook schedule: Return 3.
-    4. List or Show the list of Outlook schedules: Return 4.
+    4. List up Outlook schedules: Return 4.
+    5. Show me Outlook schedules: Return 4.
 
     The desired output from these intents is the intent number only. 
     The ID should be returned as an integer. Please note that you can only respond with one of these numbers: 1, 2, 3, 4, or 5.
@@ -130,7 +132,7 @@ class ScheduleIdEntityPrompt(PromptType):
     
     Here are some examples of function calls:
 
-    1. modify_outlook_schedule("5678", "Updated Project Meeting", "2023-10-16 10:00:00", "2023-10-16 11:00:00")
+    1. modify_outlook_schedule("5678", "Updated Project Meeting", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S")
     2. remove_outlook_schedule("5678")
     
     The desired output from these function calls is the schedule ID only, which in these examples is “5678”. The ID should be returned as a string.

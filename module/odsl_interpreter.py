@@ -4,7 +4,7 @@ This module contains the ODSLInterpreter class and the Command class.
 The ODSLInterpreter class is responsible for generating and executing ODSL commands.
 The Command class represents a command in the ODSL language and is responsible for executing the command.
 """
-from datetime import datetime
+from datetime import date, datetime
 import logging
 from textx import metamodel_from_file
 
@@ -65,7 +65,12 @@ class Command(ODSLInterface):
         try:
             return datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
         except Exception as e:
-            raise Exception('Invalid datetime format')
+            try:
+                # '2023-10-16T11:00:00.0000000' 
+                return datetime.strptime(datetime_str, '%Y-%m-%dT%H:%M:%S.%f')
+            except Exception as e:
+                logging.info(e)
+                raise Exception('Invalid datetime format')
     
     def __cname__(self, o) -> str:
         """
@@ -85,12 +90,13 @@ class Command(ODSLInterface):
         :param end_time: The end time of the schedule.
         """
         try:
-            start_time = self.__str_to_datetime__(start_time)
-            end_time = self.__str_to_datetime__(end_time)
+            start_time = self.__str_to_datetime__(start_time) # type: ignore
+            end_time = self.__str_to_datetime__(end_time) # type: ignore
 
-            self.client.outlook_event_add(description, start_time, end_time)
+            self.client.outlook_event_add(description, start_time, end_time) # type: ignore
             logging.info(f'Add Outlook schedule with subject {description} from {start_time} to {end_time}')
         except Exception as e:
+            logging.info(e)
             raise Exception('Failed to add Outlook schedule')
 
     def modify_outlook_schedule(self, schedule_id: str, description: str, start_time: str, end_time: str):
@@ -103,12 +109,13 @@ class Command(ODSLInterface):
         :param end_time: The new end time of the schedule.
         """
         try:
-            start_time = self.__str_to_datetime__(start_time)
-            end_time = self.__str_to_datetime__(end_time)
+            start_time = self.__str_to_datetime__(start_time) # type: ignore
+            end_time = self.__str_to_datetime__(end_time) # type: ignore
             
-            self.client.outlook_event_update(schedule_id, description, start_time, end_time)
+            self.client.outlook_event_update(schedule_id, description, start_time, end_time) # type: ignore
             logging.info(f'{schedule_id}: Modify Outlook schedule with subject {description} from {start_time} to {end_time}')
         except Exception as e:
+            logging.info(e)
             raise Exception('Failed to modify Outlook schedule')
 
     def remove_outlook_schedule(self, schedule_id: str):
@@ -121,6 +128,7 @@ class Command(ODSLInterface):
             self.client.outlook_event_delete(schedule_id)
             logging.info(f'{schedule_id}: Remove Outlook schedule')
         except Exception as e:
+            logging.info(e)
             raise Exception('Failed to remove Outlook schedule')
         
 
