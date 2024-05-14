@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from pydantic import Field
 
 import os
-from module.office_client import O365Client
+from module.office_client_v2 import O365Client
 
 
 class ODSLInterface(ABC):
@@ -90,6 +90,11 @@ class Command(ODSLInterface):
         :param end_time: The end time of the schedule.
         """
         try:
+            if 'YYYY-MM-DD' in start_time:
+                start_time = start_time.replace('YYYY-MM-DD', str(date.today())) # str(date.today()) returns 2023-11-16
+            if 'YYYY-MM-DD' in end_time:
+                end_time = end_time.replace('YYYY-MM-DD', str(date.today()))
+                
             start_time = self.__str_to_datetime__(start_time) # type: ignore
             end_time = self.__str_to_datetime__(end_time) # type: ignore
 
@@ -109,6 +114,11 @@ class Command(ODSLInterface):
         :param end_time: The new end time of the schedule.
         """
         try:
+            if 'YYYY-MM-DD' in start_time:
+                start_time = start_time.replace('YYYY-MM-DD', str(date.today()))
+            if 'YYYY-MM-DD' in end_time:
+                end_time = end_time.replace('YYYY-MM-DD', str(date.today()))
+
             start_time = self.__str_to_datetime__(start_time) # type: ignore
             end_time = self.__str_to_datetime__(end_time) # type: ignore
             
@@ -130,6 +140,19 @@ class Command(ODSLInterface):
         except Exception as e:
             logging.info(e)
             raise Exception('Failed to remove Outlook schedule')
+        
+    def list_outlook_schedule(self):
+        """
+        Lists up Outlook schedules.
+        """
+        try:
+            events_payload = self.client.outlook_event_list()
+            logging.info('List up Outlook schedules')
+            logging.info(events_payload)
+            return events_payload
+        except Exception as e:
+            logging.info(e)
+            raise Exception('Failed to list up Outlook schedules')
         
 
 def generate_odsl_execute(script_str: str):

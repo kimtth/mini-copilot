@@ -17,9 +17,9 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel
 from module.odsl_interpreter import generate_odsl_execute
-from module.office_client import O365Client
+from module.office_client_v2 import O365Client
 from module.enum_type import Speaker, GeneratePrompt, UserIntent
-from module.method_util import get_func_list_without_schedule_id, replace_first_param, try_get_first_parameter_in_function_call, try_parse_int, chat_completion
+from module.method_util import get_func_list, replace_first_param, try_get_first_parameter_in_function_call, try_parse_int, chat_completion
 
 
 class DialogAction(BaseModel):
@@ -43,16 +43,13 @@ class ModifyScheduleStrategy(IntentStrategy):
     def execute(self, question: str, intent: int):
         return self.chatbot.get_respond(question, intent)
 
-
 class RemoveScheduleStrategy(IntentStrategy):
     def execute(self, question: str, intent: int):
         return self.chatbot.get_respond(question, intent)
-
-
+    
 class ListScheduleStrategy(IntentStrategy):
     def execute(self, question: str, intent: int):
-        return self.chatbot.get_addtional_input()
-
+        return self.chatbot.get_schedule_list()
 
 class DefaultStrategy(IntentStrategy):
     def execute(self, question: str, intent: int):
@@ -73,7 +70,7 @@ class ChatbotInterface(ABC):
         pass
 
     @abstractmethod
-    def get_addtional_input(self):
+    def get_schedule_list(self):
         pass
 
     @abstractmethod
@@ -90,7 +87,7 @@ class ChatBot(ChatbotInterface):
         self.strategies = {
             UserIntent.MODIFY_SCHEDULE.value: ModifyScheduleStrategy(self),
             UserIntent.REMOVE_SCHEDULE.value: RemoveScheduleStrategy(self),
-            UserIntent.LIST_SCHEDULE.value: ListScheduleStrategy(self),
+            UserIntent.LIST_SCHEDULE.value: ListScheduleStrategy(self)
         }
         self.schedule_list = []
 
@@ -113,9 +110,8 @@ class ChatBot(ChatbotInterface):
 
     def get_intent(self, question: str) -> int:
         try:
-            msg_history = self.get_conversation_history_with_speaker()
-            intent_result = chat_completion(msg_history,
-                                            question, GeneratePrompt.INTENT.value)
+            # msg_history = self.get_conversation_history_with_speaker()
+            intent_result = chat_completion([], question, GeneratePrompt.INTENT.value)
 
             if try_parse_int(intent_result):
                 intent_num = int(intent_result)
@@ -128,18 +124,21 @@ class ChatBot(ChatbotInterface):
             logging.error(e)
             raise Exception('Failed to get intent')
 
-    def get_addtional_input(self) -> str:
+    def get_schedule_list(self) -> str:
         try:
             schedule_ids = self.office_client.outlook_event_list()
             self.schedule_list = schedule_ids
             schedule_ids_select = "".join(
                 [f"No.{s['no']} {s['subject']} {s['start']}-{s['end']}\n" for s in schedule_ids])
+            
+            if schedule_ids_select == "":
+                schedule_ids_select = "No schedule found"
 
             nx_action = DialogAction(id=str(uuid()), intent=UserIntent.LIST_SCHEDULE.value, speaker=Speaker.ASSISTANT,
                                      message=f"{schedule_ids_select}", timestamp=str(datetime.now()))
             self.conversation_history.append(nx_action)
 
-            logging.info('<get_addtional_input>')
+            logging.info('<get_schedule_list>')
             logging.info(nx_action)
             return nx_action.message
         except Exception as e:
@@ -158,19 +157,21 @@ class ChatBot(ChatbotInterface):
             logging.info(response_action)
             self.conversation_history.append(response_action)
 
-            func_list = get_func_list_without_schedule_id()
+            func_list = get_func_list()
 
             if any(func in response_action.message for func in func_list):
                 func_call = response_action.message
                 logging.info('<get_respond><func_call>')
                 logging.info(func_call)
-                if intent == UserIntent.ADD_SCHEDULE.value:
-                    generate_odsl_execute(func_call)
-                else:
+                schedule_id = self.get_schedule_id(func_call)
+
+                if schedule_id:
                     schedule_id = self.get_schedule_id(func_call)
                     func_call = replace_first_param(func_call, schedule_id)
                     logging.info('<get_respond><func_call>2')
                     logging.info(func_call)
+                    generate_odsl_execute(func_call)
+                else:
                     generate_odsl_execute(func_call)
 
                 response_action.message = func_call
@@ -198,10 +199,6 @@ class ChatBot(ChatbotInterface):
                 f'<get_schedule_no>:{_target_no}:{target_no}:{schedule_no}')
             if len(schedule_no) > 0:
                 schedule_id = schedule_no[0]
-
-            # check schedule id is integer or not
-            if not schedule_id:
-                raise Exception('Schedule id does not exist')
 
             logging.info(f'<get_schedule_id>{schedule_id}')
 

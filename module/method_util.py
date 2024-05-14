@@ -1,50 +1,41 @@
 
 import logging
 import os
-import openai
 import re
 from module.odsl_interpreter import generate_odsl_execute
 from typing import List
 from dotenv import load_dotenv
 from module.enum_type import Speaker
 from module.prompt_mixer import return_prompt
+from openai import AzureOpenAI
 
 load_dotenv(verbose=False)
-openai.api_type = "azure"
-openai.api_base = os.getenv("AZURE_OPEN_AI_ENDPOINT")
-openai.api_key = os.getenv("AZURE_OPENAI_API_KEY")
-openai.api_version = os.getenv("AZURE_OPENAI_API_VERSION_CHAT")
+
+aoai_client = AzureOpenAI(
+    azure_endpoint=os.getenv("AZURE_OPEN_AI_ENDPOINT"),
+    api_version=os.getenv("AZURE_OPENAI_API_VERSION_CHAT"),
+    api_key=os.getenv("AZURE_OPENAI_API_KEY")
+)
 
 
 def chat_completion(conversation_history: List, question: str, prompt_type: str) -> str:
-    """
-    Generates a chat completion response using OpenAI's GPT-3 model.
-
-    Args:
-        conversation_history (List): A list of previous conversation messages.
-        question (str): The user's question to generate a response for.
-        prompt_type (str): The type of prompt to use for generating the response.
-
-    Returns:
-        str: The generated chat completion response.
-    """
-
     message_history = [{"role": Speaker.SYSTEM.value, "content": return_prompt(
         prompt_type)}] + conversation_history + [{"role": Speaker.USER.value, "content": question}]
 
     try:
-        response = openai.ChatCompletion.create(
-            engine=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt35"),
+        response = aoai_client.chat.completions.create(
+            model=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
             messages=message_history,
             temperature=0.7,
             max_tokens=800,
             top_p=0.95,
             frequency_penalty=0,
             presence_penalty=0,
-            stop=None)
+            stop=None
+        )
 
         logging.info('<chat_completion>')
-        msg = response["choices"][0]["message"]["content"]
+        msg = response.choices[0].message.content
         logging.info(msg)
         return msg
     except Exception as e:
